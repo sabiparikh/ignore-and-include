@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Ignore and Include</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body{
+  background:#000;
+  color:#fff;
+  font-family:Arial;
+  text-align:center;
+  margin:0;
+}
+h1{margin-top:20px;font-size:42px}
+#box{
+  border:2px solid #fff;
+  width:260px;
+  margin:15px auto;
+  padding:10px;
+  border-radius:10px;
+}
+.bucket{
+  width:40%;
+  min-height:150px;
+  border:2px dashed #fff;
+  display:inline-block;
+  margin:10px;
+  padding:10px;
+  vertical-align:top;
+  border-radius:10px;
+}
+.item{
+  border:1px solid #fff;
+  padding:8px;
+  margin:6px;
+  cursor:grab;
+  border-radius:6px;
+}
+.correct{background:#0066ff}
+button{
+  background:#000;
+  color:#fff;
+  border:2px solid #fff;
+  padding:10px 20px;
+  font-size:18px;
+  margin-top:20px;
+  cursor:pointer;
+}
+#gameOver,#win{display:none}
+</style>
+</head>
+
+<body>
+
+<h1>Ignore and Include</h1>
+
+<div id="box">
+  <div>Time: <span id="time">60</span>s</div>
+  <div>Excitement: <span id="excite">100</span></div>
+</div>
+
+<h2 id="question"></h2>
+<div id="items"></div>
+
+<div>
+  <div class="bucket" id="ignore">Things to Ignore</div>
+  <div class="bucket" id="tell">Things to Tell</div>
+</div>
+
+<div id="gameOver">
+  <h1>Game Over</h1>
+  <button onclick="location.reload()">Play Again</button>
+</div>
+
+<div id="win">
+  <h1>You Won!</h1>
+  <button onclick="location.reload()">Play Again</button>
+</div>
+
+<script>
+let time=60;
+let excitement=100;
+let timer;
+
+function startTimer(){
+  clearInterval(timer);
+  time=60;
+  document.getElementById("time").innerText=time;
+  timer=setInterval(()=>{
+    time--;
+    document.getElementById("time").innerText=time;
+    if(time<=0||excitement<=0) endGame();
+  },1000);
+}
+
+let situations=[
+{
+q:"You came back from school. What should you tell parents?",
+tell:["Got a scolding from the teacher","You had dance class","You wrote a letter to a teacher and how she responded","You had been selected in music","Your friend was very upset"],
+ignore:["You were writing about the chapter","A friend talked to you","A pigeon flew by the class"]
+},
+{
+q:"Explain photosynthesis to class 1.",
+tell:["Photosynthesis is the process of making sugar for plants"],
+ignore:["Stomata take CO2 to chlorophyll","Happens inside plant cell","Epicuticular wax covers leaves"]
+},
+{
+q:"Convince friends your game is best.",
+tell:["The game is quick","The game will be fun","In this game you can learn how to cartwheel"],
+ignore:["I want you to listen to me","Why are you not listening to me"]
+}
+];
+
+let current=0;
+let needed=0;
+
+function loadSituation(){
+  startTimer();
+  let s=situations[current];
+  document.getElementById("question").innerText=s.q;
+  document.getElementById("items").innerHTML="";
+  document.getElementById("ignore").innerHTML="Things to Ignore";
+  document.getElementById("tell").innerHTML="Things to Tell";
+  let all=[...s.tell.map(x=>({t:x,b:"tell"})),...s.ignore.map(x=>({t:x,b:"ignore"}))];
+  needed=all.length;
+  all.sort(()=>Math.random()-0.5);
+  all.forEach(obj=>{
+    let d=document.createElement("div");
+    d.className="item";
+    d.draggable=true;
+    d.innerText=obj.t;
+    d.ondragstart=e=>e.dataTransfer.setData("text",JSON.stringify(obj));
+    document.getElementById("items").appendChild(d);
+  });
+}
+loadSituation();
+
+["ignore","tell"].forEach(id=>{
+  let bucket=document.getElementById(id);
+  bucket.ondragover=e=>e.preventDefault();
+  bucket.ondrop=e=>{
+    e.preventDefault();
+    let data=JSON.parse(e.dataTransfer.getData("text"));
+    if(data.b===id){
+      let el=[...document.querySelectorAll(".item")].find(x=>x.innerText===data.t);
+      el.classList.add("correct");
+      bucket.appendChild(el);
+      needed--;
+      if(needed===0) next();
+    }else{
+      time-=120;
+      excitement-=40;
+      document.getElementById("excite").innerText=excitement;
+      if(time<=0||excitement<=0) endGame();
+    }
+  }
+});
+
+function next(){
+  current++;
+  if(current>=situations.length){
+    clearInterval(timer);
+    document.getElementById("win").style.display="block";
+  }else loadSituation();
+}
+
+function endGame(){
+  clearInterval(timer);
+  document.getElementById("gameOver").style.display="block";
+}
+</script>
+
+</body>
+</html>

@@ -2,23 +2,20 @@
 <html>
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ignore and Include</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
-body{background:#000;color:#fff;font-family:Arial;text-align:center;margin:0;padding:10px;}
-h1{margin-top:10px;font-size:clamp(28px,5vw,46px);}
-#box{border:2px solid #fff;width:90%;max-width:320px;margin:15px auto;padding:10px;border-radius:10px;font-size:clamp(16px,3vw,20px);}
-h2{font-size:clamp(18px,3.8vw,26px);padding:0 10px;}
-#items{display:flex;flex-wrap:wrap;justify-content:center;}
-.item{border:1px solid #fff;padding:10px;margin:6px;cursor:grab;border-radius:6px;width:90%;max-width:260px;font-size:clamp(14px,3vw,18px);}
-#bucketWrap{display:flex;flex-wrap:wrap;justify-content:center;}
-.bucket{width:90%;max-width:300px;min-height:140px;border:2px dashed #fff;margin:10px;padding:10px;border-radius:10px;font-size:clamp(16px,3vw,20px);}
-.correct{background:#0066ff}
-button{background:#000;color:#fff;border:2px solid #fff;padding:12px 22px;font-size:clamp(16px,3vw,22px);margin-top:20px;cursor:pointer;}
-#gameOver,#win{display:none}
-#penalty{display:none;color:#ff4444;font-weight:bold;font-size:22px;}
-@media(min-width:900px){#bucketWrap{flex-wrap:nowrap}.bucket{width:35%;min-height:180px;}}
+body{margin:0;background:#000;color:#fff;font-family:Arial;text-align:center}
+h1{margin-top:15px}
+#box{border:2px solid #fff;width:90%;max-width:500px;margin:10px auto;padding:10px;font-size:20px}
+#game{width:95%;max-width:900px;margin:auto}
+.option{border:2px solid #fff;padding:8px;margin:6px;cursor:grab}
+.bucket{border:3px dashed #fff;width:45%;min-height:130px;display:inline-block;vertical-align:top;margin:5px;padding:5px}
+.correct{background:#0044ff}
+button{background:#fff;color:#000;padding:10px 20px;font-size:18px;border:none;cursor:pointer;margin-top:20px}
+#penalty{color:red;font-size:22px;display:none}
+@media(max-width:700px){.bucket{width:90%}}
 </style>
 </head>
 
@@ -27,124 +24,149 @@ button{background:#000;color:#fff;border:2px solid #fff;padding:12px 22px;font-s
 <h1>Ignore and Include</h1>
 
 <div id="box">
-  <div>Time: <span id="time">180</span>s</div>
-  <div>Excitement: <span id="excite">100</span></div>
+Time: <span id="time">180</span> sec |
+Excitement: <span id="excite">100</span>
 </div>
 
-<div id="penalty">⚠️ Wrong bucket! -2 min ⏱️  -40 excitement 🎭</div>
-
-<h2 id="question"></h2>
-<div id="items"></div>
-
-<div id="bucketWrap">
-  <div class="bucket" id="ignore">Things to Ignore</div>
-  <div class="bucket" id="tell">Things to Include</div>
-</div>
-
-<div id="gameOver">
-  <h1>Game Over</h1>
-  <button onclick="location.reload()">Play Again</button>
-</div>
-
-<div id="win">
-  <h1>You Won!</h1>
-  <button onclick="location.reload()">Play Again</button>
-</div>
+<div id="game"></div>
+<div id="penalty">⚠ Wrong bucket! -120 sec & -40 excitement</div>
 
 <script>
 let time=180;
 let excitement=100;
-let gameEnded=false;
-let timer;
+let current=0;
 
-timer=setInterval(()=>{
-  if(gameEnded) return;
+const timeEl=document.getElementById("time");
+const exciteEl=document.getElementById("excite");
+
+// GLOBAL TIMER (FIXED)
+setInterval(()=>{
   time--;
-  document.getElementById("time").innerText=time;
-  if(time<=0) endGame();
+  timeEl.innerText=time;
+  if(time<=0||excitement<=0) gameOver();
 },1000);
 
-let situations=[
+const situations=[
 {
-q:"You came back from school. What should you tell parents?",
-tell:["Got a scolding from the teacher","You had dance class","You wrote a letter to a teacher and how she responded","You had been selected in music","Your friend was very upset"],
-ignore:["You were writing about the chapter","A friend talked to you","A pigeon flew by the class"]
+q:"You came back from school. What should you tell your parents?",
+opts:[
+"Got a scolding from the teacher",
+"You were writing about the chapter",
+"A friend talked about her liking pink color",
+"A pigeon flew by the class",
+"You had dance class",
+"You wrote a letter to a teacher and how she responded",
+"You had been selected in music",
+"Your friend was very upset"
+],
+include:[
+"Got a scolding from the teacher",
+"You wrote a letter to a teacher and how she responded",
+"You had been selected in music",
+"Your friend was very upset"
+],
+ignore:[
+"You were writing about the chapter",
+"A friend talked about her liking pink color",
+"A pigeon flew by the class",
+"You had dance class"
+]
 },
 {
-q:"Explain photosynthesis to class 1.",
-tell:["Photosynthesis is the process of making sugar for plants"],
-ignore:["Stomata take CO2 to chlorophyll","Happens inside plant cell","Epicuticular wax covers leaves"]
+q:"Explain photosynthesis to class 1",
+opts:[
+"Photosynthesis is the process of making food for plants",
+"The stomata take the CO2 in and give it to the chlorophyll to process",
+"This process happens inside a plant",
+"Light energy is converted into chemical energy, and water molecules",
+"Epicuticular wax covers the leaves"
+],
+include:[
+"Photosynthesis is the process of making food for plants",
+"This process happens inside a plant",
+"Light energy is converted into chemical energy, and water molecules"
+],
+ignore:[
+"The stomata take the CO2 in and give it to the chlorophyll to process",
+"Epicuticular wax covers the leaves"
+]
 },
 {
-q:"Convince friends your game is best.",
-tell:["The game is quick","The game will be fun","In this game you can learn how to cartwheel"],
-ignore:["I want you to listen to me","Why are you not listening to me"]
+q:"Convince friends your game is best",
+opts:[
+"The game is quick and it will be fun",
+"I want you to listen to me",
+"Why are you not listening to me",
+"In this game you can learn how to cartwheel"
+],
+include:[
+"The game is quick and it will be fun",
+"In this game you can learn how to cartwheel"
+],
+ignore:[
+"I want you to listen to me",
+"Why are you not listening to me"
+]
 }
 ];
 
-let current=0;
-let needed=0;
-
 function loadSituation(){
   let s=situations[current];
-  document.getElementById("question").innerText=s.q;
-  document.getElementById("items").innerHTML="";
-  document.getElementById("ignore").innerHTML="Things to Ignore";
-  document.getElementById("tell").innerHTML="Things to Include";
-  let all=[...s.tell.map(x=>({t:x,b:"tell"})),...s.ignore.map(x=>({t:x,b:"ignore"}))];
-  needed=all.length;
-  all.sort(()=>Math.random()-0.5);
-  all.forEach(obj=>{
-    let d=document.createElement("div");
-    d.className="item";
-    d.draggable=true;
-    d.innerText=obj.t;
-    d.ondragstart=e=>e.dataTransfer.setData("text",JSON.stringify(obj));
-    document.getElementById("items").appendChild(d);
+  let html=`<h2>${s.q}</h2>`;
+  s.opts.sort(()=>Math.random()-0.5).forEach(o=>{
+    html+=`<div class="option" draggable="true">${o}</div>`;
+  });
+  html+=`<div class="bucket" id="ignore">Things to Ignore</div>
+         <div class="bucket" id="include">Things to Include</div>`;
+  game.innerHTML=html;
+
+  document.querySelectorAll(".option").forEach(el=>{
+    el.ondragstart=e=>e.dataTransfer.setData("text",el.innerText);
+  });
+
+  document.querySelectorAll(".bucket").forEach(b=>{
+    b.ondragover=e=>e.preventDefault();
+    b.ondrop=e=>{
+      e.preventDefault();
+      let text=e.dataTransfer.getData("text");
+      let s=situations[current];
+
+      let correct=(b.id=="include"&&s.include.includes(text))||(b.id=="ignore"&&s.ignore.includes(text));
+
+      if(correct){
+        let el=[...document.querySelectorAll(".option")].find(x=>x.innerText==text);
+        el.classList.add("correct");
+        b.appendChild(el);
+        checkDone();
+      }else{
+        time-=120;
+        excitement-=40;
+        exciteEl.innerText=excitement;
+        penalty.style.display="block";
+        setTimeout(()=>penalty.style.display="none",1500);
+        if(time<=0||excitement<=0) gameOver();
+      }
+    }
   });
 }
-loadSituation();
 
-["ignore","tell"].forEach(id=>{
-  let bucket=document.getElementById(id);
-  bucket.ondragover=e=>e.preventDefault();
-  bucket.ondrop=e=>{
-    if(gameEnded) return;
-    e.preventDefault();
-    let data=JSON.parse(e.dataTransfer.getData("text"));
-    if(data.b===id){
-      let el=[...document.querySelectorAll(".item")].find(x=>x.innerText===data.t);
-      el.classList.add("correct");
-      bucket.appendChild(el);
-      needed--;
-      if(needed===0) next();
-    }else{
-      time-=120;
-      excitement-=40;
-      document.getElementById("excite").innerText=excitement;
-      let p=document.getElementById("penalty");
-      p.style.display="block";
-      setTimeout(()=>p.style.display="none",1500);
-      if(excitement<=0 || time<=0) endGame();
-    }
+function checkDone(){
+  if(document.querySelectorAll(".option:not(.correct)").length==0){
+    current++;
+    if(current>=situations.length) winGame();
+    else loadSituation();
   }
-});
-
-function next(){
-  current++;
-  if(current>=situations.length){
-    gameEnded=true;
-    clearInterval(timer);
-    document.getElementById("win").style.display="block";
-  }else loadSituation();
 }
 
-function endGame(){
-  gameEnded=true;
-  clearInterval(timer);
-  document.getElementById("gameOver").style.display="block";
+function gameOver(){
+  document.body.innerHTML="<h1>Game Over</h1><button onclick='location.reload()'>Play Again</button>";
 }
+
+function winGame(){
+  document.body.innerHTML="<h1>You Won!</h1><button onclick='location.reload()'>Play Again</button>";
+}
+
+loadSituation();
 </script>
-
 </body>
 </html>

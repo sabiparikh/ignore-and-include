@@ -6,102 +6,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
-body{
-  background:#000;
-  color:#fff;
-  font-family:Arial;
-  text-align:center;
-  margin:0;
-  padding:10px;
-}
-
-/* Title scales for screens */
-h1{
-  margin-top:10px;
-  font-size:clamp(28px,5vw,46px);
-}
-
-/* Variables box responsive */
-#box{
-  border:2px solid #fff;
-  width:90%;
-  max-width:320px;
-  margin:15px auto;
-  padding:10px;
-  border-radius:10px;
-  font-size:clamp(16px,3vw,20px);
-}
-
-/* Question text responsive */
-h2{
-  font-size:clamp(18px,3.8vw,26px);
-  padding:0 10px;
-}
-
-/* Items container */
-#items{
-  display:flex;
-  flex-wrap:wrap;
-  justify-content:center;
-}
-
-/* Draggable items */
-.item{
-  border:1px solid #fff;
-  padding:10px;
-  margin:6px;
-  cursor:grab;
-  border-radius:6px;
-  width:90%;
-  max-width:260px;
-  font-size:clamp(14px,3vw,18px);
-}
-
-/* Buckets container */
-#bucketWrap{
-  display:flex;
-  flex-wrap:wrap;
-  justify-content:center;
-}
-
-/* Buckets */
-.bucket{
-  width:90%;
-  max-width:300px;
-  min-height:140px;
-  border:2px dashed #fff;
-  margin:10px;
-  padding:10px;
-  border-radius:10px;
-  font-size:clamp(16px,3vw,20px);
-}
-
+body{background:#000;color:#fff;font-family:Arial;text-align:center;margin:0;padding:10px;}
+h1{margin-top:10px;font-size:clamp(28px,5vw,46px);}
+#box{border:2px solid #fff;width:90%;max-width:320px;margin:15px auto;padding:10px;border-radius:10px;font-size:clamp(16px,3vw,20px);}
+h2{font-size:clamp(18px,3.8vw,26px);padding:0 10px;}
+#items{display:flex;flex-wrap:wrap;justify-content:center;}
+.item{border:1px solid #fff;padding:10px;margin:6px;cursor:grab;border-radius:6px;width:90%;max-width:260px;font-size:clamp(14px,3vw,18px);}
+#bucketWrap{display:flex;flex-wrap:wrap;justify-content:center;}
+.bucket{width:90%;max-width:300px;min-height:140px;border:2px dashed #fff;margin:10px;padding:10px;border-radius:10px;font-size:clamp(16px,3vw,20px);}
 .correct{background:#0066ff}
-
-/* Buttons scale */
-button{
-  background:#000;
-  color:#fff;
-  border:2px solid #fff;
-  padding:12px 22px;
-  font-size:clamp(16px,3vw,22px);
-  margin-top:20px;
-  cursor:pointer;
-}
-
+button{background:#000;color:#fff;border:2px solid #fff;padding:12px 22px;font-size:clamp(16px,3vw,22px);margin-top:20px;cursor:pointer;}
 #gameOver,#win{display:none}
-
-/* Laptop layout upgrade */
-@media(min-width:900px){
-  #bucketWrap{
-    flex-wrap:nowrap;
-    justify-content:center;
-  }
-  .bucket{
-    width:35%;
-    min-height:180px;
-  }
-}
+#penalty{display:none;color:#ff4444;font-weight:bold;font-size:22px;}
+@media(min-width:900px){#bucketWrap{flex-wrap:nowrap}.bucket{width:35%;min-height:180px;}}
 </style>
 </head>
 
@@ -110,16 +27,18 @@ button{
 <h1>Ignore and Include</h1>
 
 <div id="box">
-  <div>Time: <span id="time">60</span>s</div>
+  <div>Time: <span id="time">180</span>s</div>
   <div>Excitement: <span id="excite">100</span></div>
 </div>
+
+<div id="penalty">⚠️ Wrong bucket! -2 min ⏱️  -40 excitement 🎭</div>
 
 <h2 id="question"></h2>
 <div id="items"></div>
 
 <div id="bucketWrap">
   <div class="bucket" id="ignore">Things to Ignore</div>
-  <div class="bucket" id="tell">Things to Tell</div>
+  <div class="bucket" id="tell">Things to Include</div>
 </div>
 
 <div id="gameOver">
@@ -133,20 +52,17 @@ button{
 </div>
 
 <script>
-let time=60;
+let time=180;
 let excitement=100;
+let gameEnded=false;
 let timer;
 
-function startTimer(){
-  clearInterval(timer);
-  time=60;
+timer=setInterval(()=>{
+  if(gameEnded) return;
+  time--;
   document.getElementById("time").innerText=time;
-  timer=setInterval(()=>{
-    time--;
-    document.getElementById("time").innerText=time;
-    if(time<=0||excitement<=0) endGame();
-  },1000);
-}
+  if(time<=0) endGame();
+},1000);
 
 let situations=[
 {
@@ -170,12 +86,11 @@ let current=0;
 let needed=0;
 
 function loadSituation(){
-  startTimer();
   let s=situations[current];
   document.getElementById("question").innerText=s.q;
   document.getElementById("items").innerHTML="";
   document.getElementById("ignore").innerHTML="Things to Ignore";
-  document.getElementById("tell").innerHTML="Things to Tell";
+  document.getElementById("tell").innerHTML="Things to Include";
   let all=[...s.tell.map(x=>({t:x,b:"tell"})),...s.ignore.map(x=>({t:x,b:"ignore"}))];
   needed=all.length;
   all.sort(()=>Math.random()-0.5);
@@ -194,6 +109,7 @@ loadSituation();
   let bucket=document.getElementById(id);
   bucket.ondragover=e=>e.preventDefault();
   bucket.ondrop=e=>{
+    if(gameEnded) return;
     e.preventDefault();
     let data=JSON.parse(e.dataTransfer.getData("text"));
     if(data.b===id){
@@ -206,7 +122,10 @@ loadSituation();
       time-=120;
       excitement-=40;
       document.getElementById("excite").innerText=excitement;
-      if(time<=0||excitement<=0) endGame();
+      let p=document.getElementById("penalty");
+      p.style.display="block";
+      setTimeout(()=>p.style.display="none",1500);
+      if(excitement<=0 || time<=0) endGame();
     }
   }
 });
@@ -214,12 +133,14 @@ loadSituation();
 function next(){
   current++;
   if(current>=situations.length){
+    gameEnded=true;
     clearInterval(timer);
     document.getElementById("win").style.display="block";
   }else loadSituation();
 }
 
 function endGame(){
+  gameEnded=true;
   clearInterval(timer);
   document.getElementById("gameOver").style.display="block";
 }
